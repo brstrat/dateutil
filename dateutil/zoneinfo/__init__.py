@@ -7,6 +7,7 @@ datetime module.
 from dateutil.tz import tzfile
 from tarfile import TarFile
 import os
+import logging
 
 __author__ = "Gustavo Niemeyer <gustavo@niemeyer.net>"
 __license__ = "PSF License"
@@ -41,10 +42,13 @@ def setcachesize(size):
 def gettz(name):
     tzinfo = None
     if ZONEINFOFILE:
+        #logging.info('looking for timezone %s' % name)
         for cachedname, tzinfo in CACHE:
             if cachedname == name:
+                #logging.info('timezone %s found in cache' % tzinfo)
                 break
         else:
+            
             tf = TarFile.open(ZONEINFOFILE)
             try:
                 zonefile = tf.extractfile(name)
@@ -55,6 +59,9 @@ def gettz(name):
             tf.close()
             CACHE.insert(0, (name, tzinfo))
             del CACHE[CACHESIZE:]
+
+            #logging.info('timezone %s loaded from zip' % tzinfo)
+    
     return tzinfo
 
 def rebuild(filename, tag=None, format="gz"):

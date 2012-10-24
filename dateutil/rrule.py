@@ -13,7 +13,9 @@ import calendar
 import thread
 import sys
 
-__all__ = ["rrule", "rruleset", "rrulestr",
+import tz
+
+__all__ = ["rrule", "rruleset", "rrulestr", "str_to_freq",
            "YEARLY", "MONTHLY", "WEEKLY", "DAILY",
            "HOURLY", "MINUTELY", "SECONDLY",
            "MO", "TU", "WE", "TH", "FR", "SA", "SU"]
@@ -47,12 +49,16 @@ M365MASK = tuple(M365MASK)
 easter = None
 parser = None
 
+def str_to_freq(freq):
+    return _rrulestr._freq_map.get(freq.upper(), None)
+
 class weekday(object):
     __slots__ = ["weekday", "n"]
 
     def __init__(self, weekday, n=None):
         if n == 0:
-            raise ValueError, "Can't create weekday with n == 0"
+            #raise ValueError, "Can't create weekday with n == 0"
+            n = None
         self.weekday = weekday
         self.n = n
 
@@ -162,6 +168,16 @@ class rrulebase:
         if self._len is None:
             for x in self: pass
         return self._len
+    
+    def safe_count(self):
+        """
+        Returns the count of occurences in this rrule, as a string
+        Returns 'unlimited' if there is no end
+        """
+        if self._count or self._until:
+            return str(self.count())
+        else:
+            return "unlimited"
 
     def before(self, dt, inc=False):
         if self._cache_complete:
@@ -397,6 +413,13 @@ class rrule(rrulebase):
             self._timeset = tuple(self._timeset)
 
     def _iter(self):
+        for i in self._iter_base():
+            if i.tzinfo:
+                yield i.astimezone(tz.tzutc()).replace(tzinfo=None)
+            else:
+                yield i
+
+    def _iter_base(self):
         year, month, day, hour, minute, second, weekday, yearday, _ = \
             self._dtstart.timetuple()
 
