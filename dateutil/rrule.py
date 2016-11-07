@@ -212,13 +212,12 @@ class rrulebase:
                     return i
         return None
 
-    def between(self, after, before, inc=False):
+    def ibetween(self, after, before, inc=False):
         if self._cache_complete:
             gen = self._cache
         else:
             gen = self
         started = False
-        l = []
         if inc:
             for i in gen:
                 if i > before:
@@ -226,9 +225,9 @@ class rrulebase:
                 elif not started:
                     if i >= after:
                         started = True
-                        l.append(i)
+                        yield i
                 else:
-                    l.append(i)
+                    yield i
         else:
             for i in gen:
                 if i >= before:
@@ -236,10 +235,13 @@ class rrulebase:
                 elif not started:
                     if i > after:
                         started = True
-                        l.append(i)
+                        yield i
                 else:
-                    l.append(i)
-        return l
+                    yield i
+
+    def between(self, after, before, inc=False):
+        return list(self.ibetween(after, before, inc=inc))
+
 
 class rrule(rrulebase):
     def __init__(self, freq, dtstart=None,
